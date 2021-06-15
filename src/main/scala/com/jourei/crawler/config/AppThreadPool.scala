@@ -5,5 +5,5 @@ import scala.concurrent.ExecutionContext
 
 object AppThreadPool {
   lazy val asyncExecutorContext: ExecutionContext =
-    ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+    ExecutionContext fromExecutor Executors.newSingleThreadExecutor()
 }

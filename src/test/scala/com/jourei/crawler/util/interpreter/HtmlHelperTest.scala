@@ -19,14 +19,13 @@ class HtmlHelperTest
     forAll(examples) { testKit =>
       val extractionCoordinator =
         testKit.spawn(ExtractionCoordinator(), "extraction-coordinator")
-      val probe = testKit.createTestProbe[StatusReply[Seq[String]]]()
+      val probe = testKit.createTestProbe[StatusReply[Seq[Seq[String]]]]()
       extractionCoordinator ! ExtractionCoordinator
-        .GetRespectivelyInBatchesUsingRawSelectors(
+        .GetAllWithRawSelectors(
           "#s_xmancard_news_new > div > div.s-news-rank-wrapper.s-news-special-rank-wrapper.c-container-r > div > div > ul > li:nth-child(1) > a > span.title-content-title",
           "https://www.baidu.com",
-          probe.ref
-        )
-      probe.expectMessage(StatusReply.success(Seq("go")))
+          probe.ref)
+      probe.expectMessage(StatusReply.success(Seq(Seq("go"))))
     }
   }
 

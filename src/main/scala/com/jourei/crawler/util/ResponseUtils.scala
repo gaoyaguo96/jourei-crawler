@@ -14,22 +14,17 @@ import akka.http.scaladsl.model.{
   StatusCodes
 }
 import akka.http.scaladsl.server.Directives.complete
-import akka.http.scaladsl.server.{Route, StandardRoute}
+import akka.http.scaladsl.server.{ Route, StandardRoute }
 import io.circe.Encoder
 
 object ResponseUtils {
   import io.circe.syntax.EncoderOps
 
-  def completeWithJsonBody[A](a: A)(implicit
-      encoder: Encoder[A]
-  ): StandardRoute =
+  def completeWithJsonBody[A](a: A)(
+      implicit encoder: Encoder[A]): StandardRoute =
     complete {
-      HttpResponse(
-        entity = HttpEntity(
-          ContentTypes.`application/json`,
-          a.asJson.spaces2
-        )
-      )
+      HttpResponse(entity =
+        HttpEntity(ContentTypes.`application/json`, a.asJson.spaces2))
     }
 
   import akka.http.scaladsl.server.Directives._
@@ -40,15 +35,11 @@ object ResponseUtils {
     Seq(
       `Access-Control-Allow-Origin`.*,
       `Access-Control-Allow-Credentials`(false),
-      `Access-Control-Allow-Headers`("Authorization", "X-Requested-With")
-    )
+      `Access-Control-Allow-Headers`("Authorization", "X-Requested-With"))
 
   private def preflightRequestHandler: Route =
     options {
-      complete(
-        HttpResponse(StatusCodes.OK).withHeaders(
-          `Access-Control-Allow-Methods`(OPTIONS, GET, POST, PUT, PATCH, DELETE)
-        )
-      )
+      complete(HttpResponse(StatusCodes.OK).withHeaders(
+        `Access-Control-Allow-Methods`(OPTIONS, GET, POST, PUT, PATCH, DELETE)))
     }
 }

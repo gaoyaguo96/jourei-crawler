@@ -8,8 +8,8 @@ object StringHelper {
   final case class Split(
       splitter: String,
       string: String,
-      replyTo: ActorRef[Seq[String]]
-  ) extends Command
+      replyTo: ActorRef[Seq[String]])
+      extends Command
 
   def apply(): Behavior[Command] =
     Behaviors.receiveMessage { case Split(splitter, string, replyTo) =>

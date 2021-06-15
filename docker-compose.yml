@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  postgres-db:
+    image: postgres:latest
+    ports:
+    - 5432:5432
+    environment:
+      POSTGRES_DB: jourei-crawler-dev
+      POSTGRES_USER: crawler
+      POSTGRES_PASSWORD: crawler

@@ -40,7 +40,7 @@ object ScalikeJDBCSetup {
       config.getDuration("connection-pool.timeout").toMillis)
     dataSource.setDriverClassName(config.getString("driver"))
     dataSource.setJdbcUrl(config.getString("url"))
-    dataSource.setUsername(config.getString("user"))
+    dataSource.setUsername(config.getString("username"))
     dataSource.setPassword(config.getString("password"))
 
     dataSource

@@ -1,4 +1,4 @@
-package com.jourei.crawler.util.interpreter
+package com.jourei.crawler.protocol
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }

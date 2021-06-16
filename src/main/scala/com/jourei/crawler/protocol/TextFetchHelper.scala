@@ -1,4 +1,4 @@
-package com.jourei.crawler.util.interpreter
+package com.jourei.crawler.protocol
 
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
@@ -6,15 +6,15 @@ import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
 import akka.pattern.StatusReply
 import akka.util.Timeout
 import com.jourei.crawler.util.SupervisionUtils
-import com.jourei.crawler.util.interpreter.HtmlHelper.ExtractAll
-import com.jourei.crawler.util.interpreter.HttpHelper.{ GetHtml, Html }
+import HtmlHelper.ExtractAll
+import HttpHelper.{ GetHtml, Html }
 import okhttp3.OkHttpClient
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.DurationInt
 import scala.util.{ Failure, Success }
 
-object ExtractionCoordinator {
+object TextFetchHelper {
   sealed trait Command
   final case class Get(
       selector: String,

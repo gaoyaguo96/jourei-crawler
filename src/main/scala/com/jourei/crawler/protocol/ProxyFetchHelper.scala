@@ -1,4 +1,4 @@
-package com.jourei.crawler.util.interpreter
+package com.jourei.crawler.protocol
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }
@@ -16,14 +16,14 @@ object ProxyFetchHelper {
       replyTo: ActorRef[StatusReply[Set[(String, Int)]]])
       extends Command
 
-  def apply(fetch: ActorRef[ExtractionCoordinator.Get]): Behavior[Command] =
+  def apply(fetch: ActorRef[TextFetchHelper.Get]): Behavior[Command] =
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
         case FetchProxies(selector, url, replyTo) =>
           implicit val timeout: Timeout = Timeout(250.millis)
           context.askWithStatus(
             fetch,
-            ExtractionCoordinator.Get(selector, url, _)) {
+            TextFetchHelper.Get(selector, url, _)) {
             case Failure(exception) => FetchError(exception, replyTo)
             case Success(value)     => SendResult(value, replyTo)
           }

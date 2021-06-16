@@ -2,10 +2,10 @@ package com.jourei.crawler.database
 
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.jdbc.scaladsl.JdbcHandler
+import com.jourei.crawler.protocol.ProxyPool
+import com.jourei.crawler.protocol.ProxyPool.{ Added, Removed }
 import com.jourei.crawler.repostory.ScalikeJDBCProxyProjectionRepositoryInterpreter
 import com.jourei.crawler.repostory.entity.CrawlerProxy
-import com.jourei.crawler.util.interpreter.ProxyPool
-import com.jourei.crawler.util.interpreter.ProxyPool.{ Added, Removed }
 
 final class ProxyPoolHandler(
     repo: ScalikeJDBCProxyProjectionRepositoryInterpreter.type)

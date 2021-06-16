@@ -1,101 +1,104 @@
 package com.jourei.crawler
 
-import akka.actor.typed.scaladsl.AskPattern.{
-  schedulerFromActorSystem,
-  Askable
-}
+import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorSystem, Behavior, SupervisorStrategy }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives.{
+  as,
   concat,
-  get,
+  entity,
   onSuccess,
-  parameters,
-  path
+  pathEnd,
+  pathPrefix,
+  post
 }
 import akka.projection.ProjectionBehavior
 import akka.util.Timeout
-import com.jourei.crawler.config.AppThreadPool
 import com.jourei.crawler.database.{ ProjectionFactory, ScalikeJDBCSetup }
-import com.jourei.crawler.dto.{ CrawledData, Result }
-import com.jourei.crawler.util.ResponseUtils.{ completeWithJsonBody, cors }
-import com.jourei.crawler.util.adapter.ProxyFetchServiceActorAdapter
-import com.jourei.crawler.util.interpreter.ExtractionCoordinator.GetAll
-import com.jourei.crawler.util.interpreter.{
-  ExtractionCoordinator,
+import com.jourei.crawler.protocol.interceptor.ProxySourceInterceptor
+import com.jourei.crawler.protocol.{
   ProxyFetchHelper,
-  ProxyPool
+  ProxyPool,
+  TextFetchHelper
 }
+import com.jourei.crawler.route.Routes
+import com.jourei.crawler.service.adapter.{
+  ProxyFetchServiceActorAdapter,
+  ProxySourceServiceActorAdapter,
+  TextFetchServiceActorAdapter
+}
+import com.jourei.crawler.service.valueobject.ProxySourceDTO
+import com.jourei.crawler.util.ResponseUtils.{ completeWithJsonBody, cors }
 import io.circe.generic.auto.exportEncoder
+import io.circe.generic.decoding.DerivedDecoder.deriveDecoder
 
-import scala.concurrent.duration.DurationInt
+import java.util.concurrent.TimeUnit
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success }
 
 object CrawlerSystem {
   def rootBehavior: Behavior[Nothing] =
     Behaviors.setup[Nothing] { context =>
-      val extractionCoordinator = context.spawn(
-        superviseWithRestart(ExtractionCoordinator()),
-        "extraction-coordinator")
+      val fetchHelper =
+        context.spawn(superviseWithRestart(TextFetchHelper()), "fetch-helper")
       val proxyFetchHelper = context.spawn(
-        superviseWithRestart(ProxyFetchHelper(extractionCoordinator)),
+        superviseWithRestart(ProxyFetchHelper(fetchHelper)),
         "proxy-fetch-helper")
 
       implicit val system: ActorSystem[Nothing] = context.system
-      implicit val timeout: Timeout = Timeout(3.seconds)
+      implicit val timeout: Timeout = Timeout(3, TimeUnit.SECONDS)
 
-      ScalikeJDBCSetup.init(system.settings.config)
+      ScalikeJDBCSetup.init(system.settings.config.getConfig("jdbc-connection"))
 
-      val projectionTag = "proxy-pool-0"
+      val proxyPoolProjectionTag = "proxy-pool-0"
       val proxyPoolActor =
         context.spawn(
-          superviseWithRestart(ProxyPool(projectionTag)),
+          superviseWithRestart(ProxyPool(proxyPoolProjectionTag)),
           "proxy-pool")
-      val proxyPoolProjection = ProjectionFactory.get(projectionTag)
+      val proxyPoolProjection = ProjectionFactory.get(proxyPoolProjectionTag)
       val proxyPoolProjectionActor =
         context.spawn(
           superviseWithRestart(ProjectionBehavior(proxyPoolProjection)),
           "proxy-pool-projection")
 
+      val proxySourceProjectionTag = "proxy-source-0"
+      val proxySourceActor =
+        context.spawn(
+          superviseWithRestart(
+            ProxySourceInterceptor(proxySourceProjectionTag)),
+          "proxy-source")
+
+      val proxySourceService =
+        new ProxySourceServiceActorAdapter(proxySourceActor)
+
       val proxyFetchService =
         new ProxyFetchServiceActorAdapter(proxyFetchHelper)
 
-      def getText(selector: String)(url: String): Future[Seq[String]] =
-        extractionCoordinator
-          .askWithStatus(GetAll(Seq(selector), url, _))
-          .map(_.head)(AppThreadPool.asyncExecutorContext)
+      val textFetchService =
+        new TextFetchServiceActorAdapter(fetchHelper)
 
-      def getAllText(selectors: Seq[String])(
-          url: String): Future[Seq[Seq[String]]] =
-        extractionCoordinator.askWithStatus(GetAll(selectors, url, _))
-
+      import com.jourei.crawler.marshaller.CirceJSONSupport._
       val routes =
         cors {
-          concat(
-            path("get") {
-              get {
-                parameters("url", "selector") { (url, selector) =>
-                  onSuccess(getText(selector)(url)) { html =>
-                    completeWithJsonBody(html)
+          pathPrefix("proxy-source") {
+            concat(
+              Routes.getTextFetchPath(textFetchService),
+              pathEnd {
+                post {
+                  entity(as[ProxySourceDTO]) { proxySource =>
+                    val eventualSummary = proxySourceService.add(
+                      proxySource.selector)(proxySource.url)
+                    onSuccess(eventualSummary) { summary =>
+                      completeWithJsonBody(summary)
+                    }
                   }
                 }
-              }
-            },
-            path("get-all-in-batches") {
-              get {
-                parameters("url", "selectors") { (url, selectors) =>
-                  onSuccess((getAllText(selectors)(url) map (texts =>
-                    Result(succeed = true, CrawledData(texts))))(
-                    AppThreadPool.asyncExecutorContext))(
-                    completeWithJsonBody(_))
-                }
-              }
-            })
+              })
+          }
         }
       val bindingFuture: Future[Http.ServerBinding] =
-        Http() newServerAt ("localhost", 30000) bind routes
+        Http().newServerAt("localhost", 30000).bind(routes)
 
       implicit val executorContext: ExecutionContext = system.executionContext
       bindingFuture.onComplete {

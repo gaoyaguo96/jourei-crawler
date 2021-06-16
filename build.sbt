@@ -8,11 +8,10 @@ lazy val root = project
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor-typed",
       "com.typesafe.akka" %% "akka-persistence-typed",
-      "com.typesafe.akka" %% "akka-stream")
+      "com.typesafe.akka" %% "akka-stream",
+      "com.typesafe.akka" %% "akka-serialization-jackson")
       .map(_ % "2.6.15" withSources () withJavadoc ()),
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http",
-      "com.typesafe.akka" %% "akka-http-spray-json")
+    libraryDependencies ++= Seq("com.typesafe.akka" %% "akka-http")
       .map(_ % "10.2.4" withSources () withJavadoc ()),
     libraryDependencies ++= Seq(
       "com.lightbend.akka" %% "akka-projection-jdbc",
@@ -35,11 +34,9 @@ lazy val root = project
       "org.typelevel" %% "cats-core" % "2.6.1" withJavadoc (),
       "dev.optics" %% "monocle-core" % "3.0.0-RC2" withJavadoc (),
       "com.chuusai" %% "shapeless" % "2.3.7" withJavadoc (),
-      "org.scalikejdbc" %% "scalikejdbc" % "3.5.0" withJavadoc (),
-      "org.postgresql" % "postgresql" % "42.2.20" withJavadoc(),
+      "org.postgresql" % "postgresql" % "42.2.20" withJavadoc (),
       "ch.qos.logback" % "logback-classic" % "1.2.3" withJavadoc (),
       "com.squareup.okhttp3" % "okhttp" % "4.9.1" withJavadoc (),
-      "com.zaxxer" % "HikariCP" % "4.0.3" withJavadoc (),
       "org.jsoup" % "jsoup" % "1.13.1" withJavadoc (),
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % "2.6.15" % Test withJavadoc (),
       "com.lightbend.akka" %% "akka-persistence-jdbc" % "5.0.1" withJavadoc (),

@@ -1,12 +1,14 @@
-package com.jourei.crawler.util.adapter
+package com.jourei.crawler.service.adapter
+
 import akka.actor.typed.scaladsl.AskPattern.{
   schedulerFromActorSystem,
   Askable
 }
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.util.Timeout
-import com.jourei.crawler.util.interpreter.ProxyFetchHelper
-import com.jourei.crawler.util.interpreter.ProxyFetchHelper.FetchProxies
+import com.jourei.crawler.protocol.ProxyFetchHelper
+import com.jourei.crawler.protocol.ProxyFetchHelper.FetchProxies
+import com.jourei.crawler.service.ProxyFetchService
 
 import scala.concurrent.Future
 

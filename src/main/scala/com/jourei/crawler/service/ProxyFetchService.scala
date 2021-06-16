@@ -1,4 +1,4 @@
-package com.jourei.crawler.util.adapter
+package com.jourei.crawler.service
 
 import scala.concurrent.Future
 

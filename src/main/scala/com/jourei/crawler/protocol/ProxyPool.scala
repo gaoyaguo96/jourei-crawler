@@ -1,4 +1,4 @@
-package com.jourei.crawler.util.interpreter
+package com.jourei.crawler.protocol
 
 import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
 import akka.persistence.typed.PersistenceId
@@ -7,7 +7,6 @@ import akka.persistence.typed.scaladsl.{
   EventSourcedBehavior,
   RetentionCriteria
 }
-import monocle.Monocle.toAppliedFocusOps
 
 import scala.concurrent.duration.DurationInt
 
@@ -31,7 +30,7 @@ object ProxyPool {
 
   sealed trait Event
   final case class Added(host: Host, port: Port) extends Event
-  final case class AddedInBatches(proxies: Set[(Host, Port)]) extends Event
+  final case class AddedAll(proxies: Set[(Host, Port)]) extends Event
   final case class Removed(host: Host, port: Port) extends Event
 
   final case class State(proxies: Set[(Host, Port)]) {
@@ -55,7 +54,7 @@ object ProxyPool {
               Effect.persist(Added(host, port)).thenReply(replyTo)(_.toSummary)
             case AddInBatches(proxies, replyTo) =>
               Effect
-                .persist(AddedInBatches(proxies))
+                .persist(AddedAll(proxies))
                 .thenReply(replyTo)(_.toSummary)
             case Remove(host, port, replyTo) =>
               Effect
@@ -66,7 +65,7 @@ object ProxyPool {
         eventHandler = { (state, event) =>
           event match {
             case Added(host, port)       => State.add(host, port)(state)
-            case AddedInBatches(proxies) => State.addInBatches(proxies)(state)
+            case AddedAll(proxies) => State.addAll(proxies)(state)
             case Removed(host, port)     => State.remove(host, port)(state)
           }
         })
@@ -78,10 +77,11 @@ object ProxyPool {
   private object State {
     def empty: State = State(Set.empty)
 
+    import monocle.syntax.all._
     def add(host: Host, port: Port)(state: State): State =
       state.focus(_.proxies).modify(_ + (host -> port))
 
-    def addInBatches(proxies: Set[(Host, Port)])(state: State): State =
+    def addAll(proxies: Set[(Host, Port)])(state: State): State =
       state.focus(_.proxies).modify(_ | proxies)
 
     def remove(host: Host, port: Port)(state: State): State =

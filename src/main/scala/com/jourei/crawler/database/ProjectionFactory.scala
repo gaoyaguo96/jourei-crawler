@@ -6,8 +6,8 @@ import akka.projection.eventsourced.EventEnvelope
 import akka.projection.eventsourced.scaladsl.EventSourcedProvider
 import akka.projection.jdbc.scaladsl.JdbcProjection
 import akka.projection.{ Projection, ProjectionId }
+import com.jourei.crawler.protocol.ProxyPool
 import com.jourei.crawler.repostory.ScalikeJDBCProxyProjectionRepositoryInterpreter
-import com.jourei.crawler.util.interpreter.ProxyPool
 import scalikejdbc.DB
 
 object ProjectionFactory {
@@ -15,7 +15,7 @@ object ProjectionFactory {
       implicit
       system: ActorSystem[_]): Projection[EventEnvelope[ProxyPool.Event]] =
     JdbcProjection.exactlyOnce(
-      ProjectionId("ProxyPool", tag),
+      ProjectionId("ProxyPoolProjection", tag),
       buildSourceProvider(tag),
       () => ScalikeJdbcSession(DB.connect()),
       () =>
